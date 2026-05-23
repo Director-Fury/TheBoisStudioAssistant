@@ -27,7 +27,7 @@ export const botConfig = {
         // Text users will see (example: "Playing /help | Titan Bot").
         name: "With @TheBoisStudioLive YT",
         // Activity type number (0 = Playing).
-        type: 2, 
+        type: 1, 
       },
     ],
   },
@@ -425,9 +425,9 @@ export const botConfig = {
     cooldownActive: "Please wait {time} before using this command again.",
     errorOccurred: "An error occurred while executing this command.",
     missingPermissions:
-      "I am missing required permissions to perform this action.",
-    commandDisabled: "This command has been disabled.",
-    maintenanceMode: "The bot is currently in maintenance mode.",
+      "I am missing required permissions to perform this action Please contact Server Owner.",
+    commandDisabled: "Sorry! This command has been disabled.",
+    maintenanceMode: "Hello, Sorry for the inconvenience but The T.B.S. bot is currently in maintenance mode.",
   },
 
   // =========================
