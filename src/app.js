@@ -12,6 +12,7 @@ import { logger, startupLog, shutdownLog } from './utils/logger.js';
 import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
 import { loadCommands, registerCommands as registerSlashCommands } from './handlers/commandLoader.js';
+import { musicService } from './services/musicService.js';
 
 class TitanBot extends Client {
   constructor() {
@@ -79,6 +80,10 @@ class TitanBot extends Client {
       startupLog('Loading handlers...');
       await this.loadHandlers();
       startupLog('Handlers loaded');
+      
+      startupLog('Initializing music service...');
+      await musicService.initialize(this);
+      startupLog('Music service initialized');
       
       startupLog('Logging into Discord...');
       await this.login(this.config.bot.token);
@@ -318,6 +323,18 @@ class TitanBot extends Client {
       logger.info('Stopping cron jobs...');
       cron.getTasks().forEach(task => task.stop());
       logger.info('✅ Cron jobs stopped');
+
+      // Stop music service
+      logger.info('Stopping music service...');
+      try {
+        const playerInstance = musicService.getDiscordPlayer();
+        if (playerInstance) {
+          playerInstance.destroy();
+          logger.info('✅ Music service stopped');
+        }
+      } catch (error) {
+        logger.warn('Error stopping music service:', error.message);
+      }
 
       // Close database connection
       if (this.db && this.db.db) {
