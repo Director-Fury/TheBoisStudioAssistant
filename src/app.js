@@ -327,8 +327,11 @@ class TitanBot extends Client {
       // Stop music service
       logger.info('Stopping music service...');
       try {
-        musicService.clearPlayer(null);
-        logger.info('✅ Music service stopped');
+        const playerInstance = musicService.getDiscordPlayer();
+        if (playerInstance) {
+          playerInstance.destroy();
+          logger.info('✅ Music service stopped');
+        }
       } catch (error) {
         logger.warn('Error stopping music service:', error.message);
       }
