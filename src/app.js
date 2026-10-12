@@ -1,10 +1,11 @@
 ﻿import 'dotenv/config';
-import { Client, Collection, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import express from 'express';
 import cron from 'node-cron';
 
 import config from './config/application.js';
+import { validateConfig } from './config/bot.js';
 import { initializeDatabase } from './utils/database.js';
 import { getGuildConfig } from './services/guildConfig.js';
 import { getServerCounters, saveServerCounters, updateCounter } from './services/serverstatsService.js';
@@ -31,7 +32,9 @@ class TitanBot extends Client {
         
         
         GatewayIntentBits.GuildBans,                    
+        GatewayIntentBits.DirectMessages,
       ],
+      partials: [Partials.Channel],
     });
 
     this.config = config;
@@ -47,6 +50,15 @@ class TitanBot extends Client {
 
   async start() {
     try {
+      const configErrors = validateConfig(this.config.bot);
+      if (configErrors.length > 0) {
+        throw new Error(`Bot configuration errors:\n${configErrors.join('\n')}`);
+      }
+
+      if (!this.config.bot.supportDmLogChannelId) {
+        logger.info('Support DM forwarding is disabled; set SUPPORT_DM_LOG_CHANNEL_ID to enable it.');
+      }
+
       startupLog('Starting TitanBot...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -189,7 +201,7 @@ class TitanBot extends Client {
 
     app.get('/', (req, res) => {
       res.status(200).json({ 
-        message: 'TitanBot System Online',
+        message: 'Jarvis - TBS System Online',
         version: '2.0.0',
         timestamp: new Date().toISOString()
       });
@@ -306,7 +318,7 @@ class TitanBot extends Client {
 
   async registerCommands() {
     try {
-      await registerSlashCommands(this, this.config.bot.guildId);
+      await registerSlashCommands(this, this.config.bot.guildIds);
     } catch (error) {
       logger.error('Error registering commands:', error);
     }
@@ -398,6 +410,5 @@ try {
 }
 
 export default TitanBot;
-
 
 

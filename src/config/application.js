@@ -1,6 +1,6 @@
 import { fileURLToPath } from "url";
 import path from "path";
-import botConfig, { validateConfig } from "./bot.js";
+import botConfig from "./bot.js";
 import { shopConfig as shop } from "./shop/index.js";
 import { pgConfig } from "./postgres.js";
 
@@ -28,7 +28,8 @@ const appConfig = {
     ...botConfig,
     token: process.env.DISCORD_TOKEN || process.env.TOKEN,
     clientId: process.env.CLIENT_ID,
-    guildId: process.env.GUILD_ID,
+    guildIds: (process.env.GUILD_IDS || '').split(',').map(id => id.trim()).filter(Boolean),
+    supportDmLogChannelId: process.env.SUPPORT_DM_LOG_CHANNEL_ID?.trim(),
 
     shop: {
       ...botConfig.shop,

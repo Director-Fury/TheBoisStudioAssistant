@@ -1,5 +1,9 @@
 import { logger } from '../utils/logger.js';
 
+const allowedPresenceStatuses = new Set(['online', 'idle', 'dnd', 'invisible']);
+const configuredPresenceStatus = process.env.BOT_PRESENCE_STATUS?.trim().toLowerCase();
+const configuredActivityType = Number(process.env.BOT_ACTIVITY_TYPE);
+
 
 export const botConfig = {
   // =========================
@@ -12,7 +16,7 @@ export const botConfig = {
   // - "invisible" = appears offline
   presence: {
     // Current online state shown on Discord.
-    status: "online",
+    status: allowedPresenceStatuses.has(configuredPresenceStatus) ? configuredPresenceStatus : "online",
 
     // Activity lines shown under the bot name.
     // `type` number mapping from Discord:
@@ -24,10 +28,12 @@ export const botConfig = {
     // 5 = Competing
     activities: [
       {
-        // Text users will see (example: "Playing /help | Titan Bot").
-        name: "With @TheBoisStudioLive YT",
+        // Text users will see under the bot name.
+        name: process.env.BOT_ACTIVITY_NAME?.trim() || "Jarvis - TBS",
         // Activity type number (0 = Playing).
-        type: 1, 
+        type: Number.isInteger(configuredActivityType) && configuredActivityType >= 0 && configuredActivityType <= 5
+          ? configuredActivityType
+          : 1,
       },
     ],
   },
@@ -38,7 +44,7 @@ export const botConfig = {
   commands: {
     // Bot owner user IDs (comma-separated in OWNER_IDS env var).
     // Owners can access owner/admin-level bot commands.
-    owners: process.env.OWNER_IDS?.split(",") || [],
+    owners: process.env.OWNER_IDS?.split(",").map(id => id.trim()).filter(Boolean) || [],
 
     // Default wait time between command uses (in seconds).
     defaultCooldown: 3, 
@@ -473,7 +479,7 @@ export function validateConfig(config) {
     logger.debug('DISCORD_TOKEN exists:', !!process.env.DISCORD_TOKEN);
     logger.debug('TOKEN exists:', !!process.env.TOKEN);
     logger.debug('CLIENT_ID exists:', !!process.env.CLIENT_ID);
-    logger.debug('GUILD_ID exists:', !!process.env.GUILD_ID);
+    logger.debug('GUILD_IDS exists:', !!process.env.GUILD_IDS);
     logger.debug('POSTGRES_HOST exists:', !!process.env.POSTGRES_HOST);
     logger.debug('NODE_ENV:', process.env.NODE_ENV);
   }
@@ -484,6 +490,15 @@ export function validateConfig(config) {
 
   if (!process.env.CLIENT_ID) {
     errors.push("Client ID is required (CLIENT_ID environment variable)");
+  }
+
+  const guildIds = (process.env.GUILD_IDS || '').split(',').map(id => id.trim()).filter(Boolean);
+  if (
+    guildIds.length < 2 ||
+    new Set(guildIds).size !== guildIds.length ||
+    guildIds.some(id => !/^\d{17,20}$/.test(id))
+  ) {
+    errors.push("At least two unique valid Discord server IDs are required in GUILD_IDS (comma-separated)");
   }
 
   
@@ -500,15 +515,6 @@ export function validateConfig(config) {
   }
 
   return errors;
-}
-
-
-const configErrors = validateConfig(botConfig);
-if (configErrors.length > 0) {
-  logger.error("Bot configuration errors:", configErrors.join("\n"));
-  if (process.env.NODE_ENV === "production") {
-    process.exit(1);
-  }
 }
 
 
@@ -543,7 +549,6 @@ export function getRandomColor() {
 }
 
 export default botConfig;
-
 
 
 

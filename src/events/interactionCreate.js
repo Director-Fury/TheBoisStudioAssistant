@@ -23,6 +23,18 @@ function withTraceContext(context = {}, traceContext = {}) {
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
+    if (!interaction.guildId || !client.config.bot.guildIds.includes(interaction.guildId)) {
+      if (interaction.isAutocomplete()) {
+        await interaction.respond([]).catch(() => {});
+      } else if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
+        await interaction.reply({
+          content: 'Jarvis - TBS is only enabled in its approved servers.',
+          flags: MessageFlags.Ephemeral
+        }).catch(() => {});
+      }
+      return;
+    }
+
     const interactionTraceContext = createInteractionTraceContext(interaction);
     interaction.traceContext = interactionTraceContext;
     interaction.traceId = interactionTraceContext.traceId;

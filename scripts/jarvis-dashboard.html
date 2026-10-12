@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Jarvis - TBS | Control</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #101614;
+      --rail: #131b18;
+      --surface: #19211e;
+      --raised: #202b26;
+      --line: #36443c;
+      --text: #edf4ee;
+      --muted: #9aa99f;
+      --mint: #b9f282;
+      --mint-ink: #283d21;
+      --amber: #f3bc76;
+      --red: #f08c7e;
+      --font: Bahnschrift, "Aptos", "Segoe UI Variable", sans-serif;
+      --mono: Consolas, "Cascadia Mono", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { min-width: 340px; background: var(--ink); }
+    body { margin: 0; min-height: 100vh; color: var(--text); font-family: var(--font); background: repeating-linear-gradient(0deg, transparent 0 39px, #fff4 40px), repeating-linear-gradient(90deg, transparent 0 39px, #fff4 40px), var(--ink); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .layout { min-height: 100vh; display: grid; grid-template-columns: 226px minmax(0, 1fr); }
+    .rail { display: flex; flex-direction: column; min-height: 100vh; padding: 24px 16px 18px; background: var(--rail); border-right: 1px solid var(--line); }
+    .brand { display: flex; align-items: center; gap: 11px; padding: 2px 8px 27px; }
+    .brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--mint); color: var(--mint); font: 700 14px var(--mono); }
+    .brand-name { font-size: 15px; font-weight: 700; }
+    .brand-sub, .rail-label, .eyebrow, .crumb, .meta-label { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+    .brand-sub { margin-top: 3px; }
+    .rail-label { padding: 0 10px 9px; }
+    .nav { display: grid; gap: 4px; }
+    .nav button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 11px; border: 1px solid transparent; border-radius: 4px; color: #bac7bf; background: transparent; text-align: left; }
+    .nav button:hover { color: var(--text); background: #fff1; }
+    .nav button[aria-current="page"] { color: var(--mint); background: var(--mint-ink); border-color: #5d7d49; }
+    .nav-icon { width: 18px; color: inherit; font: 14px var(--mono); text-align: center; }
+    .rail-bottom { margin-top: auto; padding: 14px 10px 0; border-top: 1px solid var(--line); }
+    .local-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+    .lamp { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 10px #b9f28266; }
+    .main { width: min(1360px, 100%); margin: 0 auto; padding: 25px clamp(18px, 4vw, 54px) 48px; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 42px; margin-bottom: 33px; }
+    .top-time { color: var(--muted); font: 11px var(--mono); }
+    .page-title { margin: 0; font-size: 30px; font-weight: 650; }
+    .page-lede { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .security-banner { display: flex; align-items: flex-start; gap: 11px; margin: 23px 0; padding: 13px 15px; border-left: 3px solid var(--amber); background: #f3bc7614; color: #f4d4aa; font-size: 13px; line-height: 1.5; }
+    .security-banner strong { color: #ffe2bd; }
+    .status-zone { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; align-items: center; margin: 25px 0 30px; padding: 19px 21px; border: 1px solid var(--line); background: #111715e8; }
+    .status-main { display: flex; align-items: center; gap: 15px; min-width: 0; }
+    .status-lamp { width: 11px; height: 11px; flex: 0 0 11px; border-radius: 50%; background: var(--amber); }
+    .status-lamp.running { background: var(--mint); box-shadow: 0 0 12px #b9f28277; }
+    .status-lamp.stopped { background: #68766d; }
+    .status-title { font-size: 18px; font-weight: 650; }
+    .status-caption { margin-top: 4px; color: var(--muted); font: 11px var(--mono); }
+    .status-meta { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 18px; color: var(--muted); font: 11px var(--mono); }
+    .status-meta b { color: var(--text); font-weight: 500; }
+    .view { display: none; animation: reveal 220ms ease-out both; }
+    .view.active { display: block; }
+    @keyframes reveal { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin: 0 0 14px; }
+    .section-head h2 { margin: 0; font-size: 17px; font-weight: 650; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .action-row, .log-tools { display: flex; flex-wrap: wrap; gap: 9px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 38px; padding: 0 13px; border: 1px solid #46564c; border-radius: 4px; color: var(--text); background: var(--raised); font-size: 13px; }
+    .button:hover { border-color: #8c9f91; background: #2a3730; }
+    .button:disabled { opacity: .55; cursor: wait; }
+    .button.primary { color: #17220f; background: var(--mint); border-color: var(--mint); font-weight: 700; }
+    .button.primary:hover { background: #c9fa9b; }
+    .button.stop { color: #ffd5cf; border-color: #794c46; background: #382522; }
+    .button-icon { font: 14px var(--mono); }
+    .overview-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 26px 0 34px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .metric { padding: 17px 18px; border-right: 1px solid var(--line); }
+    .metric:last-child { border-right: 0; }
+    .metric-label { color: var(--muted); font: 10px var(--mono); text-transform: uppercase; }
+    .metric-value { margin-top: 8px; overflow-wrap: anywhere; font: 14px var(--mono); }
+    .content-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr); gap: 36px; }
+    .plain-section { min-width: 0; padding-top: 19px; border-top: 1px solid var(--line); }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 18px; }
+    .field { display: grid; gap: 7px; min-width: 0; }
+    .field.wide { grid-column: 1 / -1; }
+    .field label { color: #cbd6ce; font-size: 12px; }
+    .field input, .field select { width: 100%; min-width: 0; height: 39px; padding: 0 10px; border: 1px solid #3d4a42; border-radius: 3px; outline: none; color: var(--text); background: #101614; }
+    .field input:focus, .field select:focus { border-color: var(--mint); box-shadow: 0 0 0 2px #b9f28220; }
+    .field input::placeholder { color: #718077; }
+    .field small { color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .form-actions { display: flex; align-items: center; gap: 13px; margin-top: 19px; }
+    .save-state { color: var(--muted); font: 11px var(--mono); }
+    .log-output { height: min(58vh, 570px); min-height: 280px; margin: 0; padding: 12px; overflow: auto; border: 1px solid var(--line); background: #0b100e; color: #c6d4ca; font: 11px/1.7 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+    .log-line { display: block; padding: 1px 0; border-bottom: 1px solid #fff1; }
+    .toast { position: fixed; right: 22px; bottom: 20px; z-index: 6; max-width: min(420px, calc(100vw - 36px)); padding: 12px 15px; border: 1px solid #56694f; border-radius: 4px; background: #1d2c1d; color: var(--text); box-shadow: 0 8px 30px #0008; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 160ms, transform 160ms; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { border-color: #a45e52; background: #39211e; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 5; display: none; place-items: center; padding: 18px; background: #050907c9; }
+    .modal-backdrop.open { display: grid; }
+    .auth-dialog { width: min(440px, 100%); padding: 22px; border: 1px solid #506052; border-top: 3px solid var(--mint); background: var(--surface); box-shadow: 0 24px 80px #000b; }
+    .auth-dialog h2 { margin: 0; font-size: 19px; }
+    .auth-dialog p { margin: 8px 0 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .auth-dialog .field { margin: 12px 0; }
+    .auth-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 20px; }
+    @media (max-width: 900px) { .layout { grid-template-columns: 190px minmax(0, 1fr); } .content-grid { grid-template-columns: 1fr; gap: 28px; } }
+    @media (max-width: 650px) {
+      .layout { display: block; }
+      .rail { position: sticky; z-index: 2; top: 0; min-height: 0; padding: 10px 12px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .brand { padding: 0 2px 10px; }
+      .brand-mark { width: 30px; height: 30px; }
+      .rail-label, .rail-bottom { display: none; }
+      .nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .nav button { justify-content: center; padding: 8px 5px; font-size: 12px; }
+      .main { padding: 18px 16px 34px; }
+      .topbar { margin-bottom: 23px; }
+      .status-zone { grid-template-columns: 1fr; padding: 15px; }
+      .status-meta { justify-content: flex-start; gap: 8px 14px; }
+      .overview-strip { grid-template-columns: 1fr; }
+      .metric { display: flex; justify-content: space-between; gap: 12px; padding: 12px 4px; border-right: 0; border-bottom: 1px solid var(--line); }
+      .metric:last-child { border-bottom: 0; }
+      .metric-value { margin-top: 0; text-align: right; }
+    }
+    @media (max-width: 430px) { .form-grid { grid-template-columns: 1fr; } .field.wide { grid-column: auto; } .top-time { display: none; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="rail">
+      <div class="brand"><div class="brand-mark">JT</div><div><div class="brand-name">JARVIS - TBS</div><div class="brand-sub">CONTROL / LOCAL</div></div></div>
+      <div class="rail-label">Workspace</div>
+      <nav class="nav" aria-label="Control panel sections">
+        <button type="button" data-target="overview" aria-current="page"><span class="nav-icon">◈</span> Overview</button>
+        <button type="button" data-target="configuration"><span class="nav-icon">⚙</span> Configuration</button>
+        <button type="button" data-target="activity"><span class="nav-icon">≡</span> Activity log</button>
+      </nav>
+      <div class="rail-bottom"><div class="local-state"><span class="lamp"></span> Local connection</div></div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar"><div class="crumb">TBS / SYSTEMS / BOT</div><div class="top-time" id="clock"></div></div>
+      <header><div class="eyebrow">Operations console / 01</div><h1 class="page-title">Jarvis - TBS</h1><p class="page-lede">Bot runtime and configuration</p></header>
+      <div class="security-banner" id="token-warning"><span aria-hidden="true">!</span><div><strong>Credential rotation required.</strong> Replace the Discord token that was shared earlier before starting or restarting the bot.</div></div>
+      <section class="status-zone" aria-live="polite">
+        <div class="status-main"><span class="status-lamp" id="status-lamp"></span><div><div class="status-title" id="status-title">Checking task...</div><div class="status-caption" id="status-caption">Windows sign-in task / Jarvis - TBS Startup</div></div></div>
+        <div class="status-meta"><span>LAST RUN <b id="last-run">--</b></span><span>RESULT <b id="last-result">--</b></span></div>
+      </section>
+
+      <section class="view active" id="view-overview">
+        <div class="section-head"><div><h2>Runtime controls</h2><p>Windows sign-in task</p></div><button class="button" type="button" id="refresh-status"><span class="button-icon">↻</span> Refresh</button></div>
+        <div class="action-row">
+          <button class="button primary" type="button" data-action="start"><span class="button-icon">▶</span> Start bot</button>
+          <button class="button stop" type="button" data-action="stop"><span class="button-icon">■</span> Stop bot</button>
+          <button class="button" type="button" data-action="restart"><span class="button-icon">↻</span> Restart bot</button>
+        </div>
+        <div class="overview-strip">
+          <div class="metric"><span class="metric-label">Approved servers</span><span class="metric-value" id="guild-count">--</span></div>
+          <div class="metric"><span class="metric-label">Owner accounts</span><span class="metric-value" id="owner-count">--</span></div>
+          <div class="metric"><span class="metric-label">Bot token</span><span class="metric-value" id="token-state">--</span></div>
+        </div>
+        <div class="plain-section">
+          <div class="section-head"><div><h2>Recent activity</h2><p>Latest bot and startup output</p></div><button class="button" type="button" data-view="activity"><span class="button-icon">↗</span> Open log</button></div>
+          <pre class="log-output" id="overview-log" aria-live="polite">Reading logs...</pre>
+        </div>
+      </section>
+
+      <section class="view" id="view-configuration">
+        <div class="section-head"><div><h2>Configuration</h2><p>Settings save to `.env` and apply after a bot restart.</p></div></div>
+        <form id="settings-form">
+          <div class="content-grid">
+            <section class="plain-section">
+              <div class="eyebrow">Access / Discord</div>
+              <div class="form-grid" style="margin-top:14px">
+                <div class="field wide"><label for="guild-ids">Approved server IDs</label><input id="guild-ids" name="guildIds" autocomplete="off" spellcheck="false" required><small>At least two unique IDs, separated by commas.</small></div>
+                <div class="field wide"><label for="owner-ids">Owner accounts</label><input id="owner-ids" name="ownerIds" autocomplete="off" spellcheck="false" required><small>Comma-separated Discord user IDs for owner-only commands.</small></div>
+                <div class="field wide"><label for="client-id">Discord application ID</label><input id="client-id" name="clientId" inputmode="numeric" autocomplete="off" spellcheck="false" required></div>
+                <div class="field wide"><label for="discord-token">Replace bot token</label><input id="discord-token" name="discordToken" type="password" autocomplete="new-password" placeholder="Paste the rotated token; never displayed"><small id="token-help">The saved token is never returned to this page. Leave blank to keep it unchanged.</small></div>
+              </div>
+            </section>
+            <section class="plain-section">
+              <div class="eyebrow">Presence / Runtime</div>
+              <div class="form-grid" style="margin-top:14px">
+                <div class="field"><label for="presence-status">Presence status</label><select id="presence-status" name="presenceStatus"><option value="online">Online</option><option value="idle">Idle</option><option value="dnd">Do not disturb</option><option value="invisible">Invisible</option></select></div>
+                <div class="field"><label for="log-level">Log detail</label><select id="log-level" name="logLevel"><option value="error">Errors</option><option value="warn">Warnings</option><option value="info">Standard</option><option value="debug">Debug</option></select></div>
+                <div class="field wide"><label for="activity-name">Activity text</label><input id="activity-name" name="activityName" maxlength="128" required></div>
+                <div class="field wide"><label for="port">Bot web/API port</label><input id="port" name="port" type="number" min="1024" max="65535" required></div>
+              </div>
+              <div class="form-actions"><button class="button primary" type="submit" id="save-settings"><span class="button-icon">✓</span> Save settings</button><span class="save-state" id="save-state"></span></div>
+            </section>
+          </div>
+        </form>
+      </section>
+
+      <section class="view" id="view-activity">
+        <div class="section-head"><div><h2>Activity log</h2><p>Recent runtime, error, and startup records</p></div><button class="button" type="button" id="refresh-logs"><span class="button-icon">↻</span> Refresh</button></div>
+        <pre class="log-output" id="full-log" aria-live="polite">Reading logs...</pre>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="auth-modal" role="presentation">
+    <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <h2 id="auth-title">Staff authorization</h2>
+      <p id="auth-copy">Enter the staff control password to continue.</p>
+      <form id="auth-form">
+        <div class="field"><label for="staff-password" id="password-label">Staff password</label><input id="staff-password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></div>
+        <div class="field" id="confirm-field" hidden><label for="staff-confirm">Confirm staff password</label><input id="staff-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128"></div>
+        <div class="auth-actions"><button class="button" type="button" id="auth-cancel">Cancel</button><button class="button primary" type="submit" id="auth-submit">Authorize</button></div>
+      </form>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+    const byId = id => document.getElementById(id);
+    const toast = byId('toast');
+    let toastTimer;
+    let pendingAction = null;
+    let authConfigured = false;
+
+    function notify(message, isError = false) {
+      toast.textContent = message;
+      toast.classList.toggle('error', isError);
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3600);
+    }
+
+    async function api(url, options = {}) {
+      const response = await fetch(url, { cache: 'no-store', ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || `Request failed (${response.status})`);
+      return result;
+    }
+
+    function renderLogs(element, lines) {
+      element.replaceChildren();
+      if (!lines.length) { element.textContent = 'No log entries available.'; return; }
+      const fragment = document.createDocumentFragment();
+      for (const line of lines) {
+        const row = document.createElement('span');
+        row.className = 'log-line';
+        row.textContent = `${line.text}  [${line.source}]`;
+        fragment.append(row);
+      }
+      element.append(fragment);
+      element.scrollTop = element.scrollHeight;
+    }
+
+    async function loadStatus() {
+      try {
+        const status = await api('/api/status');
+        const running = status.state === 'Running';
+        byId('status-title').textContent = running ? 'Bot process active' : status.state === 'Missing' ? 'Startup task not installed' : 'Bot stopped';
+        byId('status-caption').textContent = `Windows sign-in task / ${status.taskName || status.state}`;
+        byId('status-lamp').className = `status-lamp ${running ? 'running' : 'stopped'}`;
+        const lastRun = status.lastRun ? new Date(status.lastRun) : null;
+        const neverRan = String(status.lastResult) === '267011' || !lastRun || Number.isNaN(lastRun.getTime()) || lastRun.getFullYear() < 2000;
+        byId('last-run').textContent = neverRan ? '--' : lastRun.toLocaleString();
+        byId('last-result').textContent = status.lastResult === null ? '--' : neverRan ? 'NEVER RUN' : String(status.lastResult);
+        if (running && pendingAction === 'start' && byId('auth-modal').classList.contains('open')) {
+          closeAuth();
+          notify('Jarvis - TBS is already running.');
+        }
+        return status;
+      } catch (error) {
+        byId('status-title').textContent = 'Status unavailable';
+        byId('status-caption').textContent = error.message;
+        return null;
+      }
+    }
+
+    async function loadLogs() {
+      try {
+        const result = await api('/api/logs');
+        renderLogs(byId('overview-log'), result.lines.slice(-18));
+        renderLogs(byId('full-log'), result.lines);
+      } catch (error) {
+        byId('overview-log').textContent = error.message;
+        byId('full-log').textContent = error.message;
+      }
+    }
+
+    async function loadSettings() {
+      const settings = await api('/api/settings');
+      byId('guild-ids').value = settings.guildIds;
+      byId('owner-ids').value = settings.ownerIds;
+      byId('client-id').value = settings.clientId;
+      byId('presence-status').value = settings.presenceStatus;
+      byId('activity-name').value = settings.activityName;
+      byId('log-level').value = settings.logLevel;
+      byId('port').value = settings.port;
+      byId('token-state').textContent = settings.tokenConfigured ? 'Configured / hidden' : 'Missing';
+      byId('guild-count').textContent = settings.guildIds.split(',').filter(Boolean).length;
+      byId('owner-count').textContent = settings.ownerIds.split(',').filter(Boolean).length;
+    }
+
+    function closeAuth() {
+      byId('auth-modal').classList.remove('open');
+      byId('auth-form').reset();
+      byId('confirm-field').hidden = true;
+      pendingAction = null;
+    }
+
+    async function beginAction(action) {
+      try {
+        const auth = await api('/api/auth');
+        authConfigured = auth.configured;
+        pendingAction = action;
+        byId('auth-title').textContent = auth.configured ? `${action[0].toUpperCase()}${action.slice(1)} bot` : 'Create staff password';
+        byId('auth-copy').textContent = auth.configured
+          ? `Enter the staff password to ${action} Jarvis - TBS.`
+          : 'Create an 8-character minimum staff password. You will use it to authorize Start, Stop, and Restart.';
+        byId('password-label').textContent = auth.configured ? 'Staff password' : 'New staff password';
+        byId('staff-password').autocomplete = auth.configured ? 'current-password' : 'new-password';
+        byId('confirm-field').hidden = auth.configured;
+        byId('staff-confirm').required = !auth.configured;
+        byId('auth-submit').textContent = auth.configured ? 'Authorize' : 'Create and continue';
+        byId('auth-modal').classList.add('open');
+        byId('staff-password').focus();
+      } catch (error) {
+        notify(error.message, true);
+      }
+    }
+
+    async function submitAction(event) {
+      event.preventDefault();
+      const password = byId('staff-password').value;
+      const button = byId('auth-submit');
+      button.disabled = true;
+      try {
+        if (!authConfigured) {
+          await api('/api/auth/setup', {
+            method: 'POST',
+            body: JSON.stringify({ password, confirmation: byId('staff-confirm').value })
+          });
+          authConfigured = true;
+        }
+        const result = await api(`/api/bot/${pendingAction}`, {
+          method: 'POST',
+          body: JSON.stringify({ password })
+        });
+        const action = pendingAction;
+        closeAuth();
+        notify(`${action[0].toUpperCase()}${action.slice(1)} requested.`);
+        if (result.status) {
+          byId('status-title').textContent = result.status.state === 'Running' ? 'Bot process active' : 'Bot stopped';
+          byId('status-caption').textContent = `Windows sign-in task / ${result.status.taskName || result.status.state}`;
+        }
+        setTimeout(loadStatus, 1500);
+        setTimeout(loadLogs, 3500);
+      } catch (error) {
+        notify(error.message, true);
+      } finally {
+        byId('staff-password').value = '';
+        byId('staff-confirm').value = '';
+        button.disabled = false;
+      }
+    }
+
+    document.querySelectorAll('.nav [data-target]').forEach(button => {
+      button.addEventListener('click', () => {
+        document.querySelectorAll('.nav [data-target]').forEach(item => item.removeAttribute('aria-current'));
+        button.setAttribute('aria-current', 'page');
+        document.querySelectorAll('.view').forEach(view => view.classList.toggle('active', view.id === `view-${button.dataset.target}`));
+      });
+    });
+    document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => document.querySelector('[data-target="activity"]').click()));
+    document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => beginAction(button.dataset.action)));
+    byId('auth-form').addEventListener('submit', submitAction);
+    byId('auth-cancel').addEventListener('click', closeAuth);
+    byId('auth-modal').addEventListener('click', event => { if (event.target === byId('auth-modal')) closeAuth(); });
+    byId('refresh-status').addEventListener('click', loadStatus);
+    byId('refresh-logs').addEventListener('click', loadLogs);
+
+    byId('settings-form').addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = byId('save-settings');
+      const state = byId('save-state');
+      button.disabled = true;
+      state.textContent = 'SAVING';
+      const form = new FormData(event.currentTarget);
+      const values = Object.fromEntries(form.entries());
+      try {
+        const result = await api('/api/settings', { method: 'PUT', body: JSON.stringify(values) });
+        byId('discord-token').value = '';
+        byId('token-state').textContent = result.tokenUpdated ? 'Replaced / hidden' : 'Configured / hidden';
+        state.textContent = 'SAVED / RESTART TO APPLY';
+        if (result.tokenUpdated) byId('token-warning').hidden = true;
+        notify(result.tokenUpdated ? 'Settings saved and replacement token stored.' : 'Settings saved. Restart Jarvis to apply.');
+      } catch (error) {
+        state.textContent = 'NOT SAVED';
+        notify(error.message, true);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    function updateClock() {
+      byId('clock').textContent = new Date().toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+    async function initializeDashboard() {
+      updateClock();
+      loadSettings().catch(error => notify(error.message, true));
+      loadLogs();
+      const status = await loadStatus();
+      if (status && status.state !== 'Running' && status.state !== 'Missing') {
+        beginAction('start');
+      }
+    }
+
+    initializeDashboard();
+    setInterval(loadStatus, 10000);
+    setInterval(updateClock, 30000);
+  </script>
+</body>
+</html>

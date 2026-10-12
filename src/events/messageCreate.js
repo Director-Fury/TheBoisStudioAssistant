@@ -16,8 +16,12 @@ export default {
   name: Events.MessageCreate,
   async execute(message, client) {
     try {
-      
-      if (message.author.bot || !message.guild) return;
+      if (message.author.bot) return;
+
+      if (!message.guild) {
+        await forwardSupportDm(message, client);
+        return;
+      }
 
       await handleLeveling(message, client);
     } catch (error) {
@@ -25,6 +29,35 @@ export default {
     }
   }
 };
+
+export async function forwardSupportDm(message, client) {
+  const channelId = client.config.bot.supportDmLogChannelId;
+  if (!channelId) return;
+
+  const channel = await client.channels.fetch(channelId);
+  if (!channel?.guild || !channel.isTextBased() || typeof channel.send !== 'function') {
+    throw new Error(`Support DM log destination ${channelId} is not a sendable server text channel.`);
+  }
+
+  const timestamp = Math.floor(message.createdTimestamp / 1000);
+  const body = message.content || '(No text content)';
+  const attachments = [...message.attachments.values()]
+    .map(attachment => attachment.url)
+    .join('\n');
+  const logContent = [
+    '**Incoming bot DM**',
+    `**From:** ${message.author.tag} (\`${message.author.id}\`)`,
+    `**Received:** <t:${timestamp}:F>`,
+    '',
+    body,
+    attachments ? `\n**Attachments:**\n${attachments}` : '',
+  ].filter(Boolean).join('\n').slice(0, 1900);
+
+  await channel.send({
+    content: logContent,
+    allowedMentions: { parse: [] },
+  });
+}
 
 
 
@@ -113,5 +146,4 @@ async function handleLeveling(message, client) {
     logger.error('Error handling leveling for message:', error);
   }
 }
-
 

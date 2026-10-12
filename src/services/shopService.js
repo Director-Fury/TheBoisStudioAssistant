@@ -150,7 +150,7 @@ class ShopService {
         const { category, page = 1 } = options;
         
         const embed = new EmbedBuilder()
-            .setTitle('🛒 TitanBot Shop')
+            .setTitle('🛒 Jarvis - TBS Shop')
             .setColor('#5865F2')
             .setDescription('Browse and purchase items from the shop. Use the buttons to navigate.')
             .setFooter({ text: `Page ${page}` });

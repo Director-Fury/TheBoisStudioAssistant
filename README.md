@@ -1,6 +1,6 @@
-# TitanBot - Ultimate Discord Bot
+# Jarvis - TBS | Discord Bot
 
-**TitanBot** is a powerful, feature-rich Discord bot designed to enhance your server experience with comprehensive moderation tools, engaging economy systems, utility features, and much more. Built with modern Discord.js v14 and PostgreSQL for optimal performance and data persistence.
+**Jarvis - TBS** is a feature-rich Discord bot for moderation, community tools, economy systems, and utilities. It is built with Discord.js v14 and PostgreSQL for persistent bot data.
 
 [![Support Server](https://img.shields.io/badge/-Support%20Server-%235865F2?logo=discord&logoColor=white&style=flat-square&logoWidth=20)](https://discord.gg/8kJBYhTGW9)
 [![Discord.js](https://img.shields.io/npm/v/discord.js?style=flat-square&labelColor=%23202225&color=%23202225&logo=npm&logoColor=white&logoWidth=20)](https://www.npmjs.com/package/discord.js)
@@ -18,7 +18,7 @@
 <a name="features-overview"></a>
 ## Features Overview
 
-TitanBot offers a complete suite of tools for Discord server management and community engagement:
+Jarvis - TBS offers a complete suite of tools for Discord server management and community engagement:
 
 <table>
 <tr>
@@ -95,7 +95,7 @@ For a detailed step-by-step setup guide, watch our comprehensive video tutorial:
 
 ## Docker Deployment (Recommended)
 
-TitanBot is fully containerized for easy deployment.
+Jarvis - TBS is fully containerized for easy deployment.
 
 1. **Clone the repository:**
    ```bash
@@ -112,6 +112,14 @@ TitanBot is fully containerized for easy deployment.
    ```
 
 This will start both the bot and a persistent PostgreSQL database.
+
+#### Start automatically when Windows signs in
+
+On Windows, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install-titanbot-startup.ps1` once from the project folder. It creates `.env` from `.env.example` if needed, registers the Jarvis - TBS sign-in task, and creates a desktop shortcut. Configure the Discord token, client ID, two server IDs, and owner IDs in `.env`; Jarvis - TBS then starts at the next Windows sign-in. The laptop must be signed in and connected to the internet.
+
+Open **Jarvis - TBS** from the desktop to launch the local web control panel. It shows task status and recent logs, lets you edit supported settings, and can start, stop, or restart the bot. Start, stop, and restart require a staff control password created on first use. The panel binds to `127.0.0.1`; saved settings apply after the bot restarts.
+
+The task uses Docker Compose and its persistent PostgreSQL service when Docker Desktop is installed. Otherwise, it runs the bot directly with Node.js. In this direct mode, the bot's built-in in-memory database fallback loses stored bot data when the process restarts. Startup output is recorded in `logs/startup.log`.
 
 ### Using GitHub Container Registry
 
@@ -149,7 +157,8 @@ docker pull ghcr.io/codebymitch/titanbot:main
    # Discord Bot Configuration
    DISCORD_TOKEN=your_discord_bot_token_here
    CLIENT_ID=your_discord_client_id_here
-   GUILD_ID=your_discord_guild_id_here
+   GUILD_IDS=your_first_discord_guild_id_here,your_second_discord_guild_id_here
+   OWNER_IDS=your_discord_user_id_here
 
    # PostgreSQL Configuration (Primary Database)
    POSTGRES_URL=postgresql://postgres:yourpassword@localhost:5432/titanbot
@@ -164,7 +173,7 @@ docker pull ghcr.io/codebymitch/titanbot:main
    - `NODE_ENV=production`
    - `LOG_LEVEL=warn` for a clean production console (critical issues + startup status)
    - `LOG_LEVEL=info` if you want more detailed operational logs
-   - If your chosen `PORT` is already used, TitanBot automatically tries the next port(s)
+   - If your chosen `PORT` is already used, Jarvis - TBS automatically tries the next port(s)
 
    Environment options reference:
    - `NODE_ENV`: `development`, `production`, `test` (any non-`production` value is treated as non-production)
@@ -203,7 +212,7 @@ docker pull ghcr.io/codebymitch/titanbot:main
 <a name="bot-intents"></a>
 
 ## Required Bot Intents
-TitanBot requires the following Discord intents:
+Jarvis - TBS requires the following Discord intents:
 - **Guilds**
 - **Guild Messages**
 - **Message Content**
@@ -232,7 +241,7 @@ TitanBot requires the following Discord intents:
 <a name="contributing"></a>
 ## Contributing
 
-We welcome contributions to TitanBot! Here's how you can help:
+We welcome contributions to Jarvis - TBS! Here's how you can help:
 
 1. **Fork the repository**
 2. **Create a feature branch**
@@ -248,10 +257,10 @@ We welcome contributions to TitanBot! Here's how you can help:
 
 ## License
 
-TitanBot is released under the MIT License. See [LICENSE](LICENSE) for details.
+Jarvis - TBS is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ## Thank You
 
-Thank you for choosing TitanBot for your Discord server! We're constantly working to improve and add new features based on community feedback.
+Thank you for choosing Jarvis - TBS for your Discord server! We're constantly working to improve and add new features based on community feedback.
 
 *Last updated: May 2026*

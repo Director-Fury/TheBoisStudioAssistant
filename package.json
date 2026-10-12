@@ -1,7 +1,7 @@
 {
-  "name": "titanbot-custom",
+  "name": "jarvis-tbs",
   "version": "1.1.1",
-  "description": "Modular Ultimate Community Bot by Touchpoint Support",
+  "description": "Jarvis - TBS Discord community bot",
   "main": "src/app.js",
   "type": "module",
   "scripts": {

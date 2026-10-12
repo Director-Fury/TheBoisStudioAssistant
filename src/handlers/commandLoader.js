@@ -139,8 +139,17 @@ export async function loadCommands(client) {
 
 
 
-export async function registerCommands(client, guildId) {
+export async function registerCommands(client, guildIds) {
     try {
+        if (
+            !Array.isArray(guildIds) ||
+            guildIds.length < 2 ||
+            new Set(guildIds).size !== guildIds.length ||
+            guildIds.some(guildId => !/^\d{17,20}$/.test(guildId))
+        ) {
+            throw new Error('At least two unique valid server IDs must be configured in GUILD_IDS.');
+        }
+
         const commands = [];
         let totalSubcommands = 0;
 const registeredNames = new Set();
@@ -172,7 +181,7 @@ const registeredNames = new Set();
         
         const totalCommandsWithSubs = commands.length + totalSubcommands;
         
-        if (guildId) {
+        for (const guildId of guildIds) {
             
             logger.info(`Preparing to register ${totalCommandsWithSubs} commands for guild ${guildId}`);
             
@@ -287,8 +296,6 @@ const registeredNames = new Set();
                 
                 throw error;
             }
-        } else {
-            logger.info('Skipping global command registration - bot is guild-only');
         }
     } catch (error) {
         logger.error('Error registering commands:', error);
@@ -325,5 +332,4 @@ export async function reloadCommand(client, commandName) {
         return { success: false, message: `Error reloading command: ${error.message}` };
     }
 }
-
 
