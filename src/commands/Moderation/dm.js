@@ -20,7 +20,15 @@ export default {
             option
                 .setName("user")
                 .setDescription("The user to send a DM to")
-                .setRequired(true)
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option
+                .setName("user_id")
+                .setDescription("A Discord user ID, if the user is not available in the picker")
+                .setMinLength(17)
+                .setMaxLength(20)
+                .setRequired(false)
         )
         .addStringOption(option =>
             option
@@ -71,13 +79,53 @@ export default {
             return;
         }
 
-    const targetUser = interaction.options.getUser("user");
+        const selectedUser = interaction.options.getUser("user");
+        const userId = interaction.options.getString("user_id")?.trim();
+        let targetUser = selectedUser;
         const message = interaction.options.getString("message");
         const anonymous = interaction.options.getBoolean("anonymous") || false;
         const department = interaction.options.getString("department");
         const position = interaction.options.getString("position")?.trim();
 
         try {
+            if (selectedUser && userId) {
+                return await InteractionHelper.safeEditReply(interaction, {
+                    embeds: [errorEmbed("Choose One User", "Choose a user or enter a user ID, not both.")],
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+
+            if (!selectedUser && !userId) {
+                return await InteractionHelper.safeEditReply(interaction, {
+                    embeds: [errorEmbed("User Required", "Choose a user or enter their Discord user ID.")],
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+
+            if (userId && !/^\d{17,20}$/.test(userId)) {
+                return await InteractionHelper.safeEditReply(interaction, {
+                    embeds: [errorEmbed("Invalid User ID", "Enter a valid Discord user ID containing 17 to 20 digits.")],
+                    flags: MessageFlags.Ephemeral,
+                });
+            }
+
+            if (userId) {
+                try {
+                    targetUser = await client.users.fetch(userId);
+                } catch (error) {
+                    logger.warn(`Could not fetch Discord user ${userId} for /dm:`, error);
+                    return await InteractionHelper.safeEditReply(interaction, {
+                        embeds: [errorEmbed(
+                            "User Lookup Failed",
+                            error.code === 10013
+                                ? "No Discord user was found with that ID. Double-check the ID."
+                                : "Could not look up that user right now. Please try again later."
+                        )],
+                        flags: MessageFlags.Ephemeral,
+                    });
+                }
+            }
+
             if (anonymous && !department) {
                 return await InteractionHelper.safeEditReply(interaction, {
                     embeds: [errorEmbed("Department Required", "Choose the department sending this anonymous message.")],
@@ -170,7 +218,7 @@ export default {
 if (error.code === 50007) {
                 return await InteractionHelper.safeEditReply(interaction, {
                     embeds: [
-                        errorEmbed("Error", `Could not send a DM to ${targetUser.tag}. They may have DMs disabled.`),
+                        errorEmbed("Error", `Could not send a DM to ${targetUser?.tag || userId}. They may have DMs disabled or blocked messages from this bot.`),
                     ],
                 });
             }

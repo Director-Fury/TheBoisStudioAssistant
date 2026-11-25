@@ -8,6 +8,7 @@ import { logger } from '../utils/logger.js';
 import { getLevelingConfig, getUserLevelData } from '../services/leveling.js';
 import { addXp } from '../services/xpSystem.js';
 import { checkRateLimit } from '../utils/rateLimiter.js';
+import { MAINTENANCE_REPLY } from '../utils/maintenanceMode.js';
 
 const MESSAGE_XP_RATE_LIMIT_ATTEMPTS = 12;
 const MESSAGE_XP_RATE_LIMIT_WINDOW_MS = 10000;
@@ -19,6 +20,14 @@ export default {
       if (message.author.bot) return;
 
       if (!message.guild) {
+        if (client.maintenanceMode) {
+          await message.reply({
+            content: MAINTENANCE_REPLY,
+            allowedMentions: { parse: [] },
+          });
+          return;
+        }
+
         await forwardSupportDm(message, client);
         return;
       }
@@ -146,4 +155,3 @@ async function handleLeveling(message, client) {
     logger.error('Error handling leveling for message:', error);
   }
 }
-

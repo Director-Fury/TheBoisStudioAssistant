@@ -58,7 +58,7 @@ export const pgConfig = {
         database: process.env.POSTGRES_DB || 'titanbot',
         user: process.env.POSTGRES_USER || 'postgres',
         password: (process.env.POSTGRES_PASSWORD || '').toString(),
-        ssl: false,
+        ssl: process.env.POSTGRES_SSL === 'true',
         
         
         max: parseInt(process.env.POSTGRES_MAX_CONNECTIONS) || 20,
@@ -106,7 +106,7 @@ export const pgConfig = {
     
     features: {
         pooling: true,
-        ssl: false,
+        ssl: process.env.POSTGRES_SSL === 'true',
         
         metrics: true,
         

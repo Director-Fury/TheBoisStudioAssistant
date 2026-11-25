@@ -55,6 +55,8 @@ export async function logEvent({ client, guild, guildId, event }) {
       'Member Timed Out': { color: getColor('warning'), icon: '⏳' },
       'Member Untimeouted': { color: getColor('success'), icon: '✅' },
       'User Warned': { color: getColor('warning'), icon: '⚠️' },
+      'Case Note Added': { color: getColor('info'), icon: '📝' },
+      'Suggested Action': { color: getColor('warning'), icon: '💡' },
       'Warnings Viewed': { color: getColor('info'), icon: '👁️' },
       'Messages Purged': { color: getColor('moderation'), icon: '🗑️' },
       'Channel Locked': { color: getColor('moderation'), icon: '🔒' },
@@ -136,11 +138,13 @@ export async function generateCaseId(client, guildId) {
     const caseKey = `moderation_cases_${guildId}`;
     const currentCase = await getFromDb(caseKey, 0);
     const nextCase = currentCase + 1;
-    await setInDb(caseKey, nextCase);
+    if (!await setInDb(caseKey, nextCase)) {
+      throw new Error(`Could not save the case counter for guild ${guildId}.`);
+    }
     return nextCase;
   } catch (error) {
     logger.error("Error generating case ID:", error);
-return Date.now();
+    throw error;
   }
 }
 
@@ -161,7 +165,9 @@ export async function storeModerationCase({ guildId, caseId, caseData }) {
       caseId
     };
     
-    await setInDb(caseKey, caseDataWithTimestamp);
+    if (!await setInDb(caseKey, caseDataWithTimestamp)) {
+      throw new Error(`Could not save moderation case ${caseId} for guild ${guildId}.`);
+    }
     
     const caseListKey = `moderation_cases_list_${guildId}`;
     const caseList = await getFromDb(caseListKey, []);
@@ -171,7 +177,9 @@ export async function storeModerationCase({ guildId, caseId, caseData }) {
       caseList.splice(0, caseList.length - 1000);
     }
     
-    await setInDb(caseListKey, caseList);
+    if (!await setInDb(caseListKey, caseList)) {
+      throw new Error(`Could not update the moderation case list for guild ${guildId}.`);
+    }
     return true;
   } catch (error) {
     logger.error("Error storing moderation case:", error);
@@ -225,7 +233,7 @@ export async function getModerationCases(guildId, filters = {}) {
 export async function logModerationAction({ client, guild, event }) {
   const caseId = await generateCaseId(client, guild.id);
   
-  await storeModerationCase({
+  const stored = await storeModerationCase({
     guildId: guild.id,
     caseId,
     caseData: {
@@ -239,6 +247,9 @@ export async function logModerationAction({ client, guild, event }) {
       moderatorId: event.metadata?.moderatorId
     }
   });
+  if (!stored) {
+    throw new Error(`Could not store moderation case for guild ${guild.id}.`);
+  }
   
   await logEvent({
     client,
@@ -251,6 +262,4 @@ export async function logModerationAction({ client, guild, event }) {
   
   return caseId;
 }
-
-
 

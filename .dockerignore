@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.git
+.github
+.wrangler
+node_modules
+logs
+backups
+coverage
+tests

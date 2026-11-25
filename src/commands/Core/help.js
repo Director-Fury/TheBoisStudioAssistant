@@ -51,6 +51,7 @@ export async function createInitialHelpMenu(client) {
     )
         .filter((dirent) => dirent.isDirectory())
         .map((dirent) => dirent.name)
+        .filter((category) => category.toLowerCase() !== "developer")
         .sort();
 
     const options = [
@@ -230,5 +231,4 @@ export default {
         }, HELP_MENU_TIMEOUT_MS);
     },
 };
-
 

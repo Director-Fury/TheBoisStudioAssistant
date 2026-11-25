@@ -238,9 +238,11 @@ export async function createAllCommandsMenu(page = 1, client) {
     )
         .filter((dirent) => dirent.isDirectory())
         .map((dirent) => dirent.name)
+        .filter((category) => category.toLowerCase() !== "developer")
         .sort();
 
     for (const category of categoryDirs) {
+        if (category.toLowerCase() === "developer") continue;
         try {
             const categoryPath = path.join(
                 __dirname,
@@ -407,7 +409,6 @@ export const helpCategorySelectMenu = {
         }
     },
 };
-
 
 
 

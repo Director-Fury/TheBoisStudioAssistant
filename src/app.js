@@ -44,6 +44,7 @@ class TitanBot extends Client {
     this.selectMenus = new Collection();
     this.modals = new Collection();
     this.cooldowns = new Collection();
+    this.maintenanceMode = false;
     this.db = null;
     this.rest = new REST({ version: '10' }).setToken(config.bot.token);
   }
@@ -410,5 +411,4 @@ try {
 }
 
 export default TitanBot;
-
 

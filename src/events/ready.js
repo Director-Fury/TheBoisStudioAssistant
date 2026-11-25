@@ -2,6 +2,7 @@ import { Events } from "discord.js";
 import { logger, startupLog } from "../utils/logger.js";
 import config from "../config/application.js";
 import { reconcileReactionRoleMessages } from "../services/reactionRoleService.js";
+import { restoreMaintenanceMode } from "../utils/maintenanceMode.js";
 
 export default {
   name: Events.ClientReady,
@@ -9,7 +10,16 @@ export default {
 
   async execute(client) {
     try {
-      client.user.setPresence(config.bot.presence);
+      try {
+        const maintenanceEnabled = await restoreMaintenanceMode(client);
+        if (maintenanceEnabled) {
+          startupLog("Maintenance mode restored from persistent storage");
+        }
+      } catch (error) {
+        logger.error("Could not restore maintenance mode from persistent storage:", error);
+        client.maintenanceMode = false;
+        client.user.setPresence(config.bot.presence);
+      }
 
       startupLog(`Ready! Logged in as ${client.user.tag}`);
       startupLog(`Serving ${client.guilds.cache.size} guild(s)`);
@@ -24,5 +34,4 @@ export default {
     }
   },
 };
-
 

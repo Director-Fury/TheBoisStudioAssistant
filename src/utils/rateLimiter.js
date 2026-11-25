@@ -1,48 +1,46 @@
 import { logger } from './logger.js';
 
 const rateLimitStore = new Map();
-
-
-
-
-
-
-
+const MAX_RATE_LIMIT_ENTRIES = 10_000;
 
 export async function checkRateLimit(key, maxAttempts = 5, windowMs = 60000) {
-  try {
-    const now = Date.now();
-    const entry = rateLimitStore.get(key);
+  const now = Date.now();
+  const entry = rateLimitStore.get(key);
 
-    
-    if (!entry || now - entry.windowStart > windowMs) {
-      rateLimitStore.set(key, {
-        count: 1,
-        windowStart: now
-      });
-      return true;
+  if (!entry || now - entry.windowStart > windowMs) {
+    if (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+      for (const [storedKey, storedEntry] of rateLimitStore) {
+        if (now - storedEntry.windowStart > storedEntry.windowMs) {
+          rateLimitStore.delete(storedKey);
+        }
+      }
+
+      if (rateLimitStore.size >= MAX_RATE_LIMIT_ENTRIES) {
+        logger.warn('Rate limit store reached capacity; rejecting a new key', {
+          event: 'security.rate_limit_store_full',
+          capacity: MAX_RATE_LIMIT_ENTRIES
+        });
+        return false;
+      }
     }
 
-    
-    if (entry.count < maxAttempts) {
-      entry.count++;
-      return true;
-    }
-
-    
-    logger.debug(`Rate limit exceeded for ${key}`);
-    return false;
-  } catch (error) {
-    logger.error('Error checking rate limit:', error);
-    return true; 
+    rateLimitStore.set(key, {
+      count: 1,
+      windowStart: now,
+      windowMs
+    });
+    return true;
   }
+
+  if (entry.count < maxAttempts) {
+    entry.count++;
+    entry.windowMs = windowMs;
+    return true;
+  }
+
+  logger.debug(`Rate limit exceeded for ${key}`);
+  return false;
 }
-
-
-
-
-
-
 
 export function getRateLimitStatus(key, windowMs = 60000) {
   const entry = rateLimitStore.get(key);
@@ -67,9 +65,6 @@ export function getRateLimitStatus(key, windowMs = 60000) {
 export function clearRateLimit(key) {
   rateLimitStore.delete(key);
 }
-
-
-
 
 export function clearAllRateLimits() {
   rateLimitStore.clear();

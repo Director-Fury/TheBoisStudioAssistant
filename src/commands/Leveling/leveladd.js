@@ -14,11 +14,11 @@ import { InteractionHelper } from '../../utils/interactionHelper.js';
 export default {
   data: new SlashCommandBuilder()
     .setName('leveladd')
-    .setDescription('Add levels to a user')
+    .setDescription('Add levels to another user (staff only)')
     .addUserOption((option) =>
       option
         .setName('user')
-        .setDescription('The user to add levels to')
+        .setDescription('The other user to add levels to')
         .setRequired(true)
     )
     .addIntegerOption((option) =>
@@ -66,6 +66,19 @@ export default {
       const targetUser = interaction.options.getUser('user');
       const levelsToAdd = interaction.options.getInteger('levels');
 
+      if (targetUser.id === interaction.user.id) {
+        await InteractionHelper.safeEditReply(interaction, {
+          embeds: [
+            createEmbed({
+              title: '❌ Cannot Add Levels',
+              description: 'You cannot add levels to yourself.',
+              color: 'error'
+            })
+          ],
+          flags: MessageFlags.Ephemeral
+        });
+        return;
+      }
       
       const member = await interaction.guild.members.fetch(targetUser.id).catch(() => null);
       if (!member) {

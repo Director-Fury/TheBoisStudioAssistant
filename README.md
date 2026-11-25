@@ -113,6 +113,34 @@ Jarvis - TBS is fully containerized for easy deployment.
 
 This will start both the bot and a persistent PostgreSQL database.
 
+## Cloudflare Containers Deployment
+
+The Cloudflare build command `npx wrangler deploy` requires a Wrangler
+configuration and a container image. This repository now includes both, and
+deploys Jarvis as a Cloudflare Container rather than as a static Pages site.
+Cloudflare Containers require the Workers Paid plan and are billed for
+container resources; they are not a free always-on service.
+
+1. Use the repository root as the Workers Builds root directory and deploy the
+   production branch with `npm ci` as the install command and
+   `npx wrangler deploy` as the deploy command.
+2. Add the required Worker variables `CLIENT_ID`, `GUILD_IDS`,
+   `POSTGRES_HOST`, `POSTGRES_DB`, and `POSTGRES_USER`. `GUILD_IDS` must contain
+   at least two unique Discord server IDs.
+3. Add `DISCORD_TOKEN` and `POSTGRES_PASSWORD` as Worker secrets. Never put
+   these values in `wrangler.jsonc`, the Docker image, or a public build log.
+4. Point `POSTGRES_HOST` at a PostgreSQL service reachable from Cloudflare.
+   `localhost` and the PostgreSQL service in the local `docker-compose.yml`
+   are not reachable from the Cloudflare Container. Set `POSTGRES_SSL=true`
+   for a database that requires TLS.
+
+The scheduled Worker starts Jarvis after deployment and checks the container
+every 15 minutes. It refreshes Cloudflare's six-hour inactivity timeout, so
+the container can stay online without your laptop. Cloudflare may still stop
+containers for maintenance or other platform events; this is not a guaranteed
+uptime service. Check Worker and Container logs in the Cloudflare dashboard if
+the bot does not come online.
+
 #### Start automatically when Windows signs in
 
 On Windows, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\install-titanbot-startup.ps1` once from the project folder. It creates `.env` from `.env.example` if needed, registers the Jarvis - TBS sign-in task, and creates a desktop shortcut. Configure the Discord token, client ID, two server IDs, and owner IDs in `.env`; Jarvis - TBS then starts at the next Windows sign-in. The laptop must be signed in and connected to the internet.
@@ -120,6 +148,19 @@ On Windows, run `powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\
 Open **Jarvis - TBS** from the desktop to launch the local web control panel. It shows task status and recent logs, lets you edit supported settings, and can start, stop, or restart the bot. Start, stop, and restart require a staff control password created on first use. The panel binds to `127.0.0.1`; saved settings apply after the bot restarts.
 
 The task uses Docker Compose and its persistent PostgreSQL service when Docker Desktop is installed. Otherwise, it runs the bot directly with Node.js. In this direct mode, the bot's built-in in-memory database fallback loses stored bot data when the process restarts. Startup output is recorded in `logs/startup.log`.
+
+### Developer-only commands
+
+Developer commands are limited to Discord user IDs listed in `OWNER_IDS`.
+`/maintenance mode:Enable` switches the bot to Do Not Disturb, pauses support
+DM forwarding, and replies to incoming DMs with the maintenance notice. The
+setting is stored in the bot database and restored after restart when using
+persistent database storage.
+`/maintenance mode:Disable` restores the configured presence and DM forwarding.
+`/dm-remove` requires confirmation and removes only messages authored by the bot
+from the selected user's DM history; it cannot remove messages written by users.
+The additional `/dev-status`, `/dev-guilds`, and `/dev-config` commands provide
+runtime, connected-server, and non-secret configuration diagnostics.
 
 ### Using GitHub Container Registry
 
@@ -160,6 +201,9 @@ docker pull ghcr.io/codebymitch/titanbot:main
    GUILD_IDS=your_first_discord_guild_id_here,your_second_discord_guild_id_here
    OWNER_IDS=your_discord_user_id_here
 
+   # Optional: full HTTPS URL for the Lovable community suggestions page
+   LOVABLE_SUGGESTION_URL=
+
    # PostgreSQL Configuration (Primary Database)
    POSTGRES_URL=postgresql://postgres:yourpassword@localhost:5432/titanbot
    POSTGRES_HOST=localhost
@@ -168,6 +212,7 @@ docker pull ghcr.io/codebymitch/titanbot:main
    POSTGRES_USER=postgres
    POSTGRES_PASSWORD=yourpassword
    ```
+   Set `LOVABLE_SUGGESTION_URL` to your public suggestions page URL to enable `/suggestion`.
 
    Production note:
    - `NODE_ENV=production`

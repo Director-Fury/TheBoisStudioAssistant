@@ -1,20 +1,13 @@
-FROM node:20-alpine
+FROM node:24-bookworm-slim
 
-# Create app directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
-
-# Install only production dependencies
 RUN npm ci --omit=dev
 
-# Bundle app source
-COPY . .
+COPY --chown=node:node . .
 
-# Expose the health check port from src/app.js
 EXPOSE 3000
 
-# Start the bot
-CMD [ "npm", "start" ]
+USER node
+CMD ["node", "src/app.js"]

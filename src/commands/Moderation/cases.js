@@ -17,7 +17,9 @@ export default {
                     { name: 'Bans', value: 'Member Banned' },
                     { name: 'Kicks', value: 'Member Kicked' },
                     { name: 'Timeouts', value: 'Member Timed Out' },
-                    { name: 'Warnings', value: 'User Warned' }
+                    { name: 'Warnings', value: 'User Warned' },
+                    { name: 'Notes', value: 'Case Note Added' },
+                    { name: 'Suggested Actions', value: 'Suggested Action' }
                 )
         )
         .addUserOption(option =>
@@ -180,7 +182,6 @@ time: 120000
         }
     }
 };
-
 
 
 
