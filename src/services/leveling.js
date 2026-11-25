@@ -303,6 +303,17 @@ export async function saveUserLevelData(client, guildId, userId, data) {
 
     const key = `${guildId}:leveling:users:${userId}`;
     await client.db.set(key, sanitizedData);
+    if (client.supabaseBridge) {
+      try {
+        client.supabaseBridge.queueLevelUpdate(guildId, userId, sanitizedData);
+      } catch (error) {
+        logger.error('Could not queue level data for Supabase sync:', {
+          guildId,
+          userId,
+          error: error.message
+        });
+      }
+    }
   } catch (error) {
     logger.error(`Error saving user level data for ${userId}:`, error);
     if (error instanceof TitanBotError) throw error;

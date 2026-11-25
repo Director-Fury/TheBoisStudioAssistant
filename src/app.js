@@ -14,6 +14,7 @@ import { checkBirthdays } from './services/birthdayService.js';
 import { checkGiveaways } from './services/giveawayService.js';
 import { loadCommands, registerCommands as registerSlashCommands } from './handlers/commandLoader.js';
 import { musicService } from './services/musicService.js';
+import { SupabaseBridge } from './services/supabaseBridge.js';
 
 class TitanBot extends Client {
   constructor() {
@@ -66,6 +67,11 @@ class TitanBot extends Client {
       startupLog('Initializing database...');
       const dbInstance = await initializeDatabase();
       this.db = dbInstance.db;
+
+      this.supabaseBridge = SupabaseBridge.fromEnvironment();
+      if (this.supabaseBridge) {
+        startupLog('Supabase dashboard bridge enabled');
+      }
       
       // Check database status and report
       const dbStatus = this.db.getStatus();
@@ -249,6 +255,13 @@ class TitanBot extends Client {
     cron.schedule('0 6 * * *', () => checkBirthdays(this));
     cron.schedule('* * * * *', () => checkGiveaways(this));
     cron.schedule('*/15 * * * *', () => this.updateAllCounters());
+    if (this.supabaseBridge) {
+      cron.schedule('* * * * *', () => {
+        this.supabaseBridge.pollControlRequests(this).catch((error) => {
+          logger.error('Supabase bridge polling failed:', error);
+        });
+      });
+    }
   }
 
   async updateAllCounters() {
@@ -336,6 +349,21 @@ class TitanBot extends Client {
       logger.info('Stopping cron jobs...');
       cron.getTasks().forEach(task => task.stop());
       logger.info('✅ Cron jobs stopped');
+
+      if (this.supabaseBridge) {
+        logger.info('Flushing queued Supabase level updates...');
+        try {
+          while (this.supabaseBridge.pendingLevelUpdates.size > 0) {
+            await this.supabaseBridge.flushLevelUpdates();
+          }
+          logger.info('✅ Supabase level updates flushed');
+        } catch (error) {
+          logger.error(
+            `Supabase level updates could not be fully flushed (${this.supabaseBridge.pendingLevelUpdates.size} pending):`,
+            error
+          );
+        }
+      }
 
       // Stop music service
       logger.info('Stopping music service...');

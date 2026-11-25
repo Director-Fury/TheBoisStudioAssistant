@@ -40,6 +40,8 @@ const CONTAINER_ENV_KEYS = [
   "SCHEMA_VERSION_LABEL",
   "TMDB_API_KEY",
   "LOVABLE_SUGGESTION_URL",
+  "SUPABASE_URL",
+  "SUPABASE_SECRET_KEY",
 ];
 
 function getContainerEnvironment(env) {

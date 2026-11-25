@@ -133,6 +133,8 @@ container resources; they are not a free always-on service.
    `localhost` and the PostgreSQL service in the local `docker-compose.yml`
    are not reachable from the Cloudflare Container. Set `POSTGRES_SSL=true`
    for a database that requires TLS.
+5. To enable the optional Lovable dashboard bridge, add `SUPABASE_URL` as a
+   Worker variable and `SUPABASE_SECRET_KEY` as a Worker secret.
 
 The scheduled Worker starts Jarvis after deployment and checks the container
 every 15 minutes. It refreshes Cloudflare's six-hour inactivity timeout, so
@@ -140,6 +142,48 @@ the container can stay online without your laptop. Cloudflare may still stop
 containers for maintenance or other platform events; this is not a guaranteed
 uptime service. Check Worker and Container logs in the Cloudflare dashboard if
 the bot does not come online.
+
+### Lovable dashboard and Supabase
+
+The optional dashboard bridge syncs redacted slash-command outcomes and level
+data to Supabase, and polls an allowlisted control queue for level changes.
+Jarvis requires `SUPABASE_URL` and the server-only `SUPABASE_SECRET_KEY`;
+configure them as environment variables locally or as a Cloudflare Worker
+variable and secret. Never put the secret key in Lovable's browser environment,
+the repository, or `wrangler.jsonc`. Lovable's browser should use the
+publishable key and Supabase Auth.
+
+Apply `supabase/migrations/20261126120000_jarvis_dashboard.sql` to the project
+before enabling the bridge. Provision dashboard memberships through a trusted
+server or the Supabase SQL Editor; authenticated browser users cannot create
+or change their own membership roles. For example, after replacing each
+placeholder, provision a dashboard owner in the SQL Editor:
+
+```sql
+insert into public.jarvis_dashboard_memberships
+  (auth_user_id, guild_id, discord_user_id, role)
+values
+  ('<AUTH_USER_UUID>', '<GUILD_ID>', '<DISCORD_USER_ID>', 'owner');
+```
+
+The authenticated Lovable app can submit an allowed level request through the
+`jarvis_control_requests` table:
+
+```js
+await supabase.from('jarvis_control_requests').insert({
+  action: 'set_level',
+  guild_id: guildId,
+  target_user_id: discordUserId,
+  payload: { level: 10 }
+});
+```
+
+Jarvis polls requests about once per minute. It accepts `set_level` only from
+an owner/admin membership, and independently checks the enabled guild,
+requester's Discord identity, self-targeting, and target guild membership.
+Command logs store command names and outcomes, not option values or message
+content. Supabase syncing is optional; the bot continues using its configured
+primary PostgreSQL database for bot operation.
 
 #### Start automatically when Windows signs in
 
@@ -203,6 +247,10 @@ docker pull ghcr.io/codebymitch/titanbot:main
 
    # Optional: full HTTPS URL for the Lovable community suggestions page
    LOVABLE_SUGGESTION_URL=
+
+   # Optional: server-side Supabase dashboard bridge
+   SUPABASE_URL=
+   SUPABASE_SECRET_KEY=
 
    # PostgreSQL Configuration (Primary Database)
    POSTGRES_URL=postgresql://postgres:yourpassword@localhost:5432/titanbot

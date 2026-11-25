@@ -20,6 +20,27 @@ function withTraceContext(context = {}, traceContext = {}) {
   };
 }
 
+function recordCommandOutcome(client, interaction, traceId, status, startedAt) {
+  if (!client.supabaseBridge) {
+    return;
+  }
+
+  client.supabaseBridge.logCommand({
+    traceId,
+    guildId: interaction.guildId,
+    userId: interaction.user.id,
+    commandName: interaction.commandName,
+    status,
+    durationMs: Date.now() - startedAt
+  }).catch((error) => {
+    logger.error('Could not record slash command outcome in Supabase:', {
+      traceId,
+      commandName: interaction.commandName,
+      error: error.message
+    });
+  });
+}
+
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
@@ -44,6 +65,8 @@ export default {
         InteractionHelper.patchInteractionResponses(interaction);
 
         if (interaction.isChatInputCommand()) {
+          const commandStartedAt = Date.now();
+          let commandStatus = 'completed';
           try {
             logger.info(`Command executed: /${interaction.commandName} by ${interaction.user.tag}`, {
               event: 'interaction.command.received',
@@ -102,10 +125,19 @@ export default {
 
             await command.execute(interaction, guildConfig, client);
           } catch (error) {
+            commandStatus = 'error';
             await handleInteractionError(interaction, error, withTraceContext({
               type: 'command',
               commandName: interaction.commandName
             }, interactionTraceContext));
+          } finally {
+            recordCommandOutcome(
+              client,
+              interaction,
+              interactionTraceContext.traceId,
+              commandStatus,
+              commandStartedAt
+            );
           }
         } else if (interaction.isAutocomplete()) {
           // Handle autocomplete interactions
